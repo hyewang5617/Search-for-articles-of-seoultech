@@ -399,12 +399,12 @@
 <!-- 범례 -->
 <div id="legend">
   <div class="legend-title">카테고리</div>
-  <div class="legend-item"><span class="legend-dot" style="background:#5C6B7A"></span>학내보도</div>
-  <div class="legend-item"><span class="legend-dot" style="background:#2C3E50"></span>심층</div>
-  <div class="legend-item"><span class="legend-dot" style="background:#8B9BAB"></span>기획</div>
-  <div class="legend-item"><span class="legend-dot" style="background:#4A5568"></span>시사</div>
-  <div class="legend-item"><span class="legend-dot" style="background:#A0ADB8"></span>문화</div>
-  <div class="legend-item"><span class="legend-dot" style="background:#1A252F"></span>인터뷰</div>
+  <div class="legend-item"><span class="legend-dot" style="background:#FF5722"></span>학내보도</div>
+  <div class="legend-item"><span class="legend-dot" style="background:#E91E63"></span>심층</div>
+  <div class="legend-item"><span class="legend-dot" style="background:#9C27B0"></span>기획</div>
+  <div class="legend-item"><span class="legend-dot" style="background:#FF9800"></span>시사</div>
+  <div class="legend-item"><span class="legend-dot" style="background:#2196F3"></span>문화</div>
+  <div class="legend-item"><span class="legend-dot" style="background:#4CAF50"></span>인터뷰</div>
 </div>
 
 <script src="https://d3js.org/d3.v7.min.js"></script>
@@ -418,18 +418,18 @@ let currentQuery  = '';
 let simulation    = null;
 
 const CAT_COLOR = {
-  '학내보도': '#5C6B7A',
-  '심층':    '#2C3E50',
-  '기획':    '#8B9BAB',
-  '시사':    '#4A5568',
-  '문화':    '#A0ADB8',
-  '인터뷰':  '#1A252F',
-  'default': '#607080',
+  '학내보도': '#FF5722',
+  '심층':    '#E91E63',
+  '기획':    '#9C27B0',
+  '시사':    '#FF9800',
+  '문화':    '#2196F3',
+  '인터뷰':  '#4CAF50',
+  'default': '#FF7043',
 };
 
 const KW_COLORS = [
-  '#1A252F','#2C3E50','#4A5568','#5C6B7A','#6B7A8A',
-  '#7A8A9A','#8B9BAB','#9AABB8','#A0ADB8','#B0BEC5',
+  '#FF5722','#E91E63','#9C27B0','#3F51B5','#2196F3',
+  '#009688','#4CAF50','#FF9800','#795548','#607D8B',
 ];
 
 // ════════════════════════════════════════════════
