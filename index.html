@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>서울과기대신문 기사 검색</title>
+<style>
+  :root {
+    --navy: #111111;
+    --navy2: #333333;
+    --bg: #f9f9f9;
+    --card: #ffffff;
+    --border: #e2e2e2;
+    --text: #1a1a1a;
+    --muted: #888888;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Noto Sans KR','Malgun Gothic',sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; }
+
+  /* ── 헤더 ── */
+  header {
+    background: var(--navy);
+    color: #fff;
+    padding: 18px 24px 0;
+    position: relative;
+    z-index: 10;
+  }
+  .header-row {
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  .logo-badge {
+    background: #333;
+    color: #fff;
+    font-weight: 700;
+    font-size: 11px;
+    padding: 3px 9px;
+    border-radius: 4px;
+    letter-spacing: .05em;
+    white-space: nowrap;
+  }
+  .logo-name {
+    font-size: 16px;
+    font-weight: 700;
+    opacity: .9;
+  }
+  .search-wrap {
+    flex: 1;
+    min-width: 220px;
+    display: flex;
+    gap: 8px;
+    background: #fff;
+    border-radius: 10px 10px 0 0;
+    padding: 14px 16px 14px;
+    box-shadow: 0 -2px 10px rgba(0,0,0,.08);
+  }
+  .search-input {
+    flex: 1;
+    border: 1.5px solid var(--border);
+    border-radius: 7px;
+    padding: 10px 14px;
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color .2s;
+  }
+  .search-input:focus { border-color: var(--navy2); }
+  .search-btn {
+    background: var(--navy);
+    color: #fff;
+    border: none;
+    border-radius: 7px;
+    padding: 0 18px;
+    font-size: 14px;
+    font-family: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background .15s;
+  }
+  .search-btn:hover { background: var(--navy2); }
+
+  /* ── 필터 ── */
+  .filter-row {
+    background: #fff;
+    border-bottom: 1px solid var(--border);
+    padding: 10px 24px;
+    display: flex;
+    gap: 7px;
+    flex-wrap: wrap;
+    max-width: 100%;
+  }
+  .chip {
+    padding: 4px 13px;
+    border-radius: 14px;
+    border: 1.5px solid var(--border);
+    background: #fff;
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all .12s;
+    color: var(--muted);
+  }
+  .chip:hover, .chip.on { border-color: #333; color: #111; background: #f0f0f0; }
+  .chip.on { font-weight: 700; }
+
+  /* ── 메인 캔버스 영역 ── */
+  #stage {
+    width: 100vw;
+    height: calc(100vh - 100px);
+    position: relative;
+    overflow: hidden;
+  }
+  #graph-svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  /* ── 시작 화면 안내 ── */
+  #intro {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+  }
+  .intro-icon { font-size: 52px; margin-bottom: 16px; opacity: .18; }
+  .intro-title { font-size: 20px; font-weight: 700; color: var(--navy); opacity: .35; margin-bottom: 8px; }
+  .intro-sub { font-size: 13px; color: var(--muted); opacity: .7; }
+
+  /* ── 결과 없음 ── */
+  #no-result {
+    display: none;
+    position: absolute;
+    inset: 0;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+  }
+  #no-result .nr-icon { font-size: 40px; opacity: .3; }
+  #no-result .nr-text { font-size: 16px; color: var(--muted); }
+
+  /* ── 로딩 ── */
+  #loading {
+    display: none;
+    position: absolute;
+    inset: 0;
+    align-items: center;
+    justify-content: center;
+    background: rgba(247,248,250,.85);
+    z-index: 30;
+  }
+  .spinner {
+    width: 32px; height: 32px;
+    border: 3px solid #ddd;
+    border-top-color: var(--navy);
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── 데이터 없음 안내 ── */
+  #no-data {
+    display: none;
+    position: absolute;
+    inset: 0;
+    align-items: center;
+    justify-content: center;
+    z-index: 20;
+  }
+  .no-data-box {
+    background: #fff;
+    border: 1px solid #fed7aa;
+    border-radius: 12px;
+    padding: 28px 32px;
+    max-width: 440px;
+    text-align: center;
+    font-size: 14px;
+    line-height: 1.8;
+    box-shadow: 0 4px 20px rgba(0,0,0,.08);
+  }
+  .no-data-box h3 { font-size: 17px; margin-bottom: 12px; color: #92400e; }
+  .no-data-box code {
+    background: #fef3c7;
+    color: #92400e;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 13px;
+  }
+
+  /* ── 툴팁 (워드클라우드) ── */
+  #tooltip {
+    position: fixed;
+    z-index: 100;
+    pointer-events: none;
+    display: none;
+    max-width: 300px;
+    min-width: 200px;
+  }
+  .tt-box {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,.14);
+    overflow: hidden;
+  }
+  .tt-header {
+    background: #1a1a1a;
+    color: #fff;
+    padding: 10px 14px;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.4;
+  }
+  .tt-meta {
+    background: #f4f4f4;
+    padding: 5px 14px;
+    font-size: 11px;
+    color: var(--muted);
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .tt-meta span { white-space: nowrap; }
+  .tt-cloud {
+    padding: 12px 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 6px;
+    align-items: center;
+    min-height: 80px;
+  }
+  .kw-word {
+    display: inline-block;
+    font-weight: 600;
+    line-height: 1.2;
+    transition: opacity .1s;
+  }
+  .tt-footer {
+    padding: 8px 14px;
+    font-size: 11px;
+    color: #888;
+    border-top: 1px solid var(--border);
+    text-align: center;
+  }
+
+  /* ── 상태 바 ── */
+  #statusbar {
+    position: fixed;
+    bottom: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(20,20,20,.85);
+    color: #fff;
+    font-size: 12px;
+    padding: 6px 18px;
+    border-radius: 20px;
+    pointer-events: none;
+    transition: opacity .3s;
+    white-space: nowrap;
+    z-index: 50;
+  }
+  #statusbar.hidden { opacity: 0; }
+
+  /* SVG 스타일 */
+  .link { stroke: #ccc; stroke-opacity: .6; }
+  .link.strong { stroke: #999; stroke-opacity: .85; }
+
+  /* ── 범례 ── */
+  #legend {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    background: rgba(255,255,255,0.92);
+    border: 1px solid #e2e2e2;
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 12px;
+    z-index: 40;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 2px 12px rgba(0,0,0,.08);
+  }
+  #legend .legend-title {
+    font-weight: 700;
+    color: #444;
+    margin-bottom: 8px;
+    font-size: 11px;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 5px;
+    color: #444;
+  }
+  .legend-item:last-child { margin-bottom: 0; }
+  .legend-dot {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .node-circle { cursor: pointer; transition: r .2s; }
+  .node-label {
+    font-size: 11px;
+    fill: #333;
+    text-anchor: middle;
+    pointer-events: none;
+    font-family: 'Noto Sans KR','Malgun Gothic',sans-serif;
+  }
+  .node-label.big { font-size: 13px; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-row">
+    <div class="logo">
+      <span class="logo-badge">서울과기대신문</span>
+      <span class="logo-name">기사 검색</span>
+    </div>
+    <div class="search-wrap">
+      <input id="searchInput" class="search-input" type="text"
+        placeholder="검색어 입력 (예: 총학생회, 암 발병, STU)" autocomplete="off">
+      <button class="search-btn" onclick="doSearch()">검색</button>
+    </div>
+  </div>
+</header>
+
+<div class="filter-row" id="filterRow">
+  <button class="chip on" data-cat="전체" onclick="setFilter(this)">전체</button>
+  <button class="chip" data-cat="학내보도" onclick="setFilter(this)">학내보도</button>
+  <button class="chip" data-cat="심층" onclick="setFilter(this)">심층</button>
+  <button class="chip" data-cat="기획" onclick="setFilter(this)">기획</button>
+  <button class="chip" data-cat="시사" onclick="setFilter(this)">시사</button>
+  <button class="chip" data-cat="문화" onclick="setFilter(this)">문화</button>
+  <button class="chip" data-cat="인터뷰" onclick="setFilter(this)">인터뷰</button>
+</div>
+
+<div id="stage">
+  <svg id="graph-svg"></svg>
+
+  <div id="intro">
+    <div class="intro-icon">🗞</div>
+    <div class="intro-title">검색어를 입력해주세요</div>
+    <div class="intro-sub">관련 기사들이 네트워크 그래프로 표시됩니다</div>
+  </div>
+
+  <div id="no-result" style="display:none;position:absolute;inset:0;flex-direction:column;align-items:center;justify-content:center;">
+    <div class="nr-icon">🔍</div>
+    <div class="nr-text" id="noResultText">검색 결과가 없습니다</div>
+  </div>
+
+  <div id="loading" style="display:none;position:absolute;inset:0;align-items:center;justify-content:center;background:rgba(247,248,250,.7);z-index:30;">
+    <div class="spinner"></div>
+  </div>
+
+  <div id="no-data" style="display:none;position:absolute;inset:0;align-items:center;justify-content:center;">
+    <div class="no-data-box">
+      <h3>⚠ 기사 데이터가 없습니다</h3>
+      먼저 크롤러를 실행해 <code>articles.json</code>을 생성해주세요:<br><br>
+      <code>python crawler.py</code><br><br>
+      완료 후 이 페이지를 새로고침하세요.
+    </div>
+  </div>
+</div>
+
+<!-- 툴팁 -->
+<div id="tooltip">
+  <div class="tt-box">
+    <div class="tt-header" id="ttTitle"></div>
+    <div class="tt-meta" id="ttMeta"></div>
+    <div class="tt-cloud" id="ttCloud"></div>
+    <div class="tt-footer">클릭하면 원문으로 이동 ↗</div>
+  </div>
+</div>
+
+<div id="statusbar" class="hidden"></div>
+
+<!-- 범례 -->
+<div id="legend">
+  <div class="legend-title">카테고리</div>
+  <div class="legend-item"><span class="legend-dot" style="background:#5C6B7A"></span>학내보도</div>
+  <div class="legend-item"><span class="legend-dot" style="background:#2C3E50"></span>심층</div>
+  <div class="legend-item"><span class="legend-dot" style="background:#8B9BAB"></span>기획</div>
+  <div class="legend-item"><span class="legend-dot" style="background:#4A5568"></span>시사</div>
+  <div class="legend-item"><span class="legend-dot" style="background:#A0ADB8"></span>문화</div>
+  <div class="legend-item"><span class="legend-dot" style="background:#1A252F"></span>인터뷰</div>
+</div>
+
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script>
+// ════════════════════════════════════════════════
+// 상태
+// ════════════════════════════════════════════════
+let articles = [];
+let currentFilter = '전체';
+let currentQuery  = '';
+let simulation    = null;
+
+const CAT_COLOR = {
+  '학내보도': '#5C6B7A',
+  '심층':    '#2C3E50',
+  '기획':    '#8B9BAB',
+  '시사':    '#4A5568',
+  '문화':    '#A0ADB8',
+  '인터뷰':  '#1A252F',
+  'default': '#607080',
+};
+
+const KW_COLORS = [
+  '#1A252F','#2C3E50','#4A5568','#5C6B7A','#6B7A8A',
+  '#7A8A9A','#8B9BAB','#9AABB8','#A0ADB8','#B0BEC5',
+];
+
+// ════════════════════════════════════════════════
+// 데이터 로드
+// ════════════════════════════════════════════════
+async function init() {
+  show('loading');
+  try {
+    const res = await fetch('articles.json');
+    if (!res.ok) throw new Error('not found');
+    articles = await res.json();
+    hide('loading');
+    show('intro');
+    setStatus(`${articles.length.toLocaleString()}개 기사 로드됨`);
+    setTimeout(() => hideStatus(), 3000);
+  } catch {
+    hide('loading');
+    show('no-data');
+  }
+}
+
+// ════════════════════════════════════════════════
+// 검색
+// ════════════════════════════════════════════════
+function doSearch() {
+  const q = document.getElementById('searchInput').value.trim();
+  if (!q) return;
+  currentQuery = q;
+
+  hide('intro');
+  hide('no-result');
+
+  const tokens = q.split(/\s+/).filter(Boolean);
+
+  let pool = articles;
+  if (currentFilter !== '전체') pool = articles.filter(a => a.category === currentFilter);
+
+  // 키워드 빈도 계산 (제목 3×)
+  const scored = pool.map(a => {
+    const titleT = (a.title || '').toLowerCase();
+    const bodyT  = (a.content || '').toLowerCase();
+    let count = 0;
+    tokens.forEach(t => {
+      count += countOcc(titleT, t.toLowerCase()) * 3;
+      count += countOcc(bodyT,  t.toLowerCase());
+    });
+    return { ...a, _score: count };
+  }).filter(a => a._score > 0)
+    .sort((a, b) => b._score - a._score);
+
+  if (scored.length === 0) {
+    clearGraph();
+    show('no-result');
+    document.getElementById('noResultText').textContent =
+      `"${q}" 검색 결과가 없습니다`;
+    setStatus(`검색 결과 없음`, 3000);
+    return;
+  }
+
+  const top = scored.slice(0, 25); // 최대 25개
+  drawNetwork(top, tokens);
+  setStatus(`"${q}" — ${scored.length}개 결과 (상위 ${top.length}개 표시)`);
+}
+
+function countOcc(text, term) {
+  let n = 0, pos = 0;
+  while ((pos = text.indexOf(term, pos)) !== -1) { n++; pos++; }
+  return n;
+}
+
+function setFilter(el) {
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
+  el.classList.add('on');
+  currentFilter = el.dataset.cat;
+  if (currentQuery) doSearch();
+}
+
+// ════════════════════════════════════════════════
+// 유사도 계산 (코사인 유사도 on keywords)
+// ════════════════════════════════════════════════
+function cosineSim(a1, a2) {
+  const kw1 = Object.fromEntries((a1.keywords || []).map(k => [k.word, k.score]));
+  const kw2 = Object.fromEntries((a2.keywords || []).map(k => [k.word, k.score]));
+  let dot = 0, m1 = 0, m2 = 0;
+  for (const [w, s] of Object.entries(kw1)) {
+    dot += s * (kw2[w] || 0);
+    m1  += s * s;
+  }
+  for (const s of Object.values(kw2)) m2 += s * s;
+  if (!m1 || !m2) return 0;
+  return dot / (Math.sqrt(m1) * Math.sqrt(m2));
+}
+
+// ════════════════════════════════════════════════
+// D3 네트워크 그래프
+// ════════════════════════════════════════════════
+function drawNetwork(articles, tokens) {
+  clearGraph();
+
+  const svg    = d3.select('#graph-svg');
+  const W      = document.getElementById('stage').clientWidth;
+  const H      = document.getElementById('stage').clientHeight;
+  svg.attr('width', W).attr('height', H);
+
+  // 노드 크기 스케일 (최대 점수 → 최대 반지름)
+  const maxScore = articles[0]._score;
+  const rScale   = d3.scaleSqrt().domain([1, maxScore]).range([14, 52]).clamp(true);
+
+  // 링크 (유사도 threshold 이상인 쌍)
+  const THRESHOLD = 0.08;
+  const links = [];
+  for (let i = 0; i < articles.length; i++) {
+    for (let j = i + 1; j < articles.length; j++) {
+      const sim = cosineSim(articles[i], articles[j]);
+      if (sim > THRESHOLD) {
+        links.push({ source: articles[i].idx, target: articles[j].idx, sim });
+      }
+    }
+  }
+
+  // 링크 그룹
+  const linkG = svg.append('g').attr('class', 'links');
+  const linkEl = linkG.selectAll('line')
+    .data(links)
+    .join('line')
+    .attr('class', d => d.sim > 0.2 ? 'link strong' : 'link')
+    .attr('stroke-width', d => Math.max(1, d.sim * 5));
+
+  // 노드 그룹
+  const nodeG = svg.append('g').attr('class', 'nodes');
+
+  const nodeEl = nodeG.selectAll('g')
+    .data(articles)
+    .join('g')
+    .attr('class', 'node-g')
+    .call(d3.drag()
+      .on('start', dragStart)
+      .on('drag',  dragging)
+      .on('end',   dragEnd))
+    .on('mouseover', onHover)
+    .on('mousemove', onMove)
+    .on('mouseout',  onOut)
+    .on('click', d => window.open(d.target.__data__.url, '_blank'));
+
+  // 원
+  nodeEl.append('circle')
+    .attr('class', 'node-circle')
+    .attr('r', d => rScale(d._score))
+    .attr('fill', d => CAT_COLOR[d.category] || CAT_COLOR.default)
+    .attr('fill-opacity', (d, i) => i === 0 ? 1 : 0.75)
+    .attr('stroke', '#fff')
+    .attr('stroke-width', 2);
+
+  // 라벨
+  nodeEl.append('text')
+    .attr('class', d => d._score === maxScore ? 'node-label big' : 'node-label')
+    .attr('y', d => rScale(d._score) + 14)
+    .text(d => truncate(d.title, 16));
+
+  // 포스 시뮬레이션
+  simulation = d3.forceSimulation(articles)
+    .force('link',    d3.forceLink(links)
+      .id(d => d.idx)
+      .distance(d => 120 - d.sim * 60)
+      .strength(d => d.sim * 0.4))
+    .force('charge',  d3.forceManyBody().strength(-220))
+    .force('center',  d3.forceCenter(W / 2, H / 2))
+    .force('collide', d3.forceCollide().radius(d => rScale(d._score) + 18))
+    .on('tick', () => {
+      linkEl
+        .attr('x1', d => d.source.x).attr('y1', d => d.source.y)
+        .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
+      nodeEl.attr('transform', d => `translate(${d.x},${d.y})`);
+    });
+
+  // 줌
+  svg.call(d3.zoom()
+    .scaleExtent([0.3, 3])
+    .on('zoom', e => {
+      linkG.attr('transform', e.transform);
+      nodeG.attr('transform', e.transform);
+    }));
+}
+
+function clearGraph() {
+  if (simulation) { simulation.stop(); simulation = null; }
+  d3.select('#graph-svg').selectAll('*').remove();
+  d3.select('#graph-svg').on('.zoom', null);
+}
+
+// 드래그
+function dragStart(e, d) {
+  if (!e.active) simulation.alphaTarget(0.3).restart();
+  d.fx = d.x; d.fy = d.y;
+}
+function dragging(e, d) { d.fx = e.x; d.fy = e.y; }
+function dragEnd(e, d) {
+  if (!e.active) simulation.alphaTarget(0);
+  d.fx = null; d.fy = null;
+}
+
+// ════════════════════════════════════════════════
+// 툴팁 (워드클라우드)
+// ════════════════════════════════════════════════
+function onHover(e, d) {
+  const art = e.target.__data__;
+  if (!art) return;
+
+  document.getElementById('ttTitle').textContent = art.title || '제목 없음';
+
+  const metaEl = document.getElementById('ttMeta');
+  metaEl.innerHTML = '';
+  if (art.category) addMeta(metaEl, art.category);
+  if (art.issue)    addMeta(metaEl, art.issue);
+  if (art.date)     addMeta(metaEl, art.date);
+  if (art.reporter) addMeta(metaEl, art.reporter + ' 기자');
+
+  renderWordCloud(art.keywords || []);
+
+  const tt = document.getElementById('tooltip');
+  tt.style.display = 'block';
+  positionTooltip(e);
+}
+
+function onMove(e) {
+  positionTooltip(e);
+}
+
+function onOut() {
+  document.getElementById('tooltip').style.display = 'none';
+}
+
+function positionTooltip(e) {
+  const tt = document.getElementById('tooltip');
+  const mx = e.clientX, my = e.clientY;
+  const tw = tt.offsetWidth  || 280;
+  const th = tt.offsetHeight || 200;
+  const vw = window.innerWidth, vh = window.innerHeight;
+
+  let x = mx + 16;
+  let y = my - 10;
+  if (x + tw > vw - 10) x = mx - tw - 16;
+  if (y + th > vh - 10) y = vh - th - 10;
+  if (y < 10) y = 10;
+
+  tt.style.left = x + 'px';
+  tt.style.top  = y + 'px';
+}
+
+function addMeta(el, text) {
+  const s = document.createElement('span');
+  s.textContent = text;
+  el.appendChild(s);
+}
+
+function renderWordCloud(keywords) {
+  const cloud = document.getElementById('ttCloud');
+  cloud.innerHTML = '';
+
+  if (!keywords || keywords.length === 0) {
+    cloud.innerHTML = '<span style="font-size:12px;color:#999">키워드 없음</span>';
+    return;
+  }
+
+  const maxScore = keywords[0].score || 1;
+  const rotations = [0, 0, -12, 12, 0, -8, 8, 0, -15, 15];
+
+  keywords.slice(0, 18).forEach((kw, i) => {
+    const ratio = kw.score / maxScore;
+    const size  = Math.round(11 + ratio * 17); // 11px ~ 28px
+    const color = KW_COLORS[i % KW_COLORS.length];
+    const rot   = rotations[i % rotations.length];
+
+    const span = document.createElement('span');
+    span.className = 'kw-word';
+    span.textContent = kw.word;
+    span.style.cssText = `
+      font-size: ${size}px;
+      color: ${color};
+      transform: rotate(${rot}deg);
+      opacity: ${0.6 + ratio * 0.4};
+    `;
+    cloud.appendChild(span);
+  });
+}
+
+// ════════════════════════════════════════════════
+// 유틸
+// ════════════════════════════════════════════════
+function truncate(str, n) {
+  if (!str) return '';
+  return str.length > n ? str.slice(0, n) + '…' : str;
+}
+
+let statusTimer = null;
+function setStatus(msg, autoHide = 0) {
+  const el = document.getElementById('statusbar');
+  el.textContent = msg;
+  el.classList.remove('hidden');
+  if (statusTimer) clearTimeout(statusTimer);
+  if (autoHide > 0) statusTimer = setTimeout(hideStatus, autoHide);
+}
+function hideStatus() {
+  document.getElementById('statusbar').classList.add('hidden');
+}
+
+function show(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.style.display = 'flex';
+}
+function hide(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.style.display = 'none';
+}
+
+// ════════════════════════════════════════════════
+// 키보드 이벤트
+// ════════════════════════════════════════════════
+document.getElementById('searchInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doSearch();
+});
+
+// ════════════════════════════════════════════════
+// 시작
+// ════════════════════════════════════════════════
+init();
+</script>
+</body>
+</html>
