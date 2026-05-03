@@ -36,24 +36,21 @@
   }
   .logo {
     display: flex;
-    align-items: center;
-    gap: 10px;
+    flex-direction: column;
     flex-shrink: 0;
   }
-  .logo-badge {
-    background: #333;
-    color: #fff;
-    font-weight: 700;
-    font-size: 11px;
-    padding: 3px 9px;
-    border-radius: 4px;
-    letter-spacing: .05em;
-    white-space: nowrap;
-  }
   .logo-name {
-    font-size: 16px;
-    font-weight: 700;
-    opacity: .9;
+    font-size: 18px;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -.02em;
+    line-height: 1.2;
+  }
+  .logo-sub {
+    font-size: 11px;
+    color: rgba(255,255,255,.45);
+    letter-spacing: .04em;
+    margin-top: 2px;
   }
   .search-wrap {
     flex: 1;
@@ -267,17 +264,147 @@
     bottom: 14px;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(20,20,20,.85);
+    background: rgba(20,20,20,.88);
     color: #fff;
     font-size: 12px;
-    padding: 6px 18px;
+    padding: 7px 20px;
     border-radius: 20px;
-    pointer-events: none;
     transition: opacity .3s;
     white-space: nowrap;
     z-index: 50;
+    cursor: default;
   }
-  #statusbar.hidden { opacity: 0; }
+  #statusbar.clickable {
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  #statusbar.clickable:hover { background: rgba(40,40,40,.95); }
+  #statusbar.hidden { opacity: 0; pointer-events: none; }
+
+  /* ── 전체 결과 모달 ── */
+  #listModal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    background: rgba(0,0,0,.45);
+    align-items: flex-end;
+    justify-content: center;
+  }
+  #listModal.open { display: flex; }
+  .modal-sheet {
+    background: #fff;
+    border-radius: 16px 16px 0 0;
+    width: 100%;
+    max-width: 720px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 -8px 40px rgba(0,0,0,.18);
+    animation: slideUp .22s ease;
+  }
+  @keyframes slideUp { from { transform: translateY(40px); opacity: 0; } }
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px 12px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .modal-title { font-size: 15px; font-weight: 700; }
+  .modal-sort {
+    display: flex;
+    gap: 6px;
+  }
+  .sort-btn {
+    padding: 4px 12px;
+    border-radius: 14px;
+    border: 1.5px solid var(--border);
+    background: #fff;
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    color: var(--muted);
+    transition: all .12s;
+  }
+  .sort-btn.on { background: #111; color: #fff; border-color: #111; font-weight: 600; }
+  .modal-close {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: var(--muted);
+    line-height: 1;
+    padding: 0 0 0 12px;
+  }
+  .modal-list {
+    overflow-y: auto;
+    flex: 1;
+    padding: 8px 0;
+  }
+  .list-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 20px;
+    border-bottom: 1px solid #f0f0f0;
+    text-decoration: none;
+    color: inherit;
+    transition: background .1s;
+  }
+  .list-item:hover { background: #fafafa; }
+  .list-rank {
+    font-size: 13px;
+    font-weight: 800;
+    color: #ccc;
+    min-width: 24px;
+    padding-top: 1px;
+  }
+  .list-rank.top { color: #111; }
+  .list-body { flex: 1; min-width: 0; }
+  .list-title {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.4;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .list-meta {
+    font-size: 11px;
+    color: var(--muted);
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .list-cat {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 2px;
+    vertical-align: middle;
+    position: relative;
+    top: -1px;
+  }
+  .list-score {
+    font-size: 11px;
+    font-weight: 700;
+    color: #aaa;
+    white-space: nowrap;
+    padding-top: 2px;
+  }
+  .list-dot {
+    flex-shrink: 0;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-top: 4px;
+  }
+  .list-info { flex: 1; min-width: 0; }
 
   /* SVG 스타일 */
   .link { stroke: #ccc; stroke-opacity: .6; }
@@ -335,8 +462,8 @@
 <header>
   <div class="header-row">
     <div class="logo">
-      <span class="logo-badge">서울과기대신문</span>
-      <span class="logo-name">기사 검색</span>
+      <span class="logo-name">서울과기대신문</span>
+      <span class="logo-sub">기사 검색</span>
     </div>
     <div class="search-wrap">
       <input id="searchInput" class="search-input" type="text"
@@ -396,6 +523,23 @@
 
 <div id="statusbar" class="hidden"></div>
 
+<!-- 전체 결과 모달 -->
+<div id="listModal" onclick="closeModal(event)">
+  <div class="modal-sheet">
+    <div class="modal-header">
+      <span class="modal-title" id="modalTitle"></span>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="modal-sort">
+          <button class="sort-btn on" id="sortScore" onclick="setSort('score')">인기순</button>
+          <button class="sort-btn" id="sortDate"  onclick="setSort('date')">최신순</button>
+        </div>
+        <button class="modal-close" onclick="closeModalDirect()">✕</button>
+      </div>
+    </div>
+    <div class="modal-list" id="modalList"></div>
+  </div>
+</div>
+
 <!-- 범례 -->
 <div id="legend">
   <div class="legend-title">카테고리</div>
@@ -413,9 +557,11 @@
 // 상태
 // ════════════════════════════════════════════════
 let articles = [];
-let currentFilter = '전체';
-let currentQuery  = '';
-let simulation    = null;
+let currentFilter  = '전체';
+let currentQuery   = '';
+let simulation     = null;
+let currentScored  = [];   // 현재 검색된 전체 결과
+let currentSort    = 'score';
 
 const CAT_COLOR = {
   '학내보도': '#fb6107',
@@ -489,9 +635,10 @@ function doSearch() {
     return;
   }
 
-  const top = scored.slice(0, 25); // 최대 25개
+  currentScored = scored;
+  const top = scored.slice(0, 25);
   drawNetwork(top, tokens);
-  setStatus(`"${q}" — ${scored.length}개 결과 (상위 ${top.length}개 표시)`);
+  setStatus(`"${q}" — ${scored.length}개 결과 (상위 ${top.length}개 표시)`, true);
 }
 
 function countOcc(text, term) {
@@ -725,15 +872,96 @@ function truncate(str, n) {
 }
 
 let statusTimer = null;
-function setStatus(msg, autoHide = 0) {
+function setStatus(msg, clickable = false) {
   const el = document.getElementById('statusbar');
   el.textContent = msg;
   el.classList.remove('hidden');
   if (statusTimer) clearTimeout(statusTimer);
-  if (autoHide > 0) statusTimer = setTimeout(hideStatus, autoHide);
+  if (clickable) {
+    el.classList.add('clickable');
+    el.onclick = openModal;
+  } else {
+    el.classList.remove('clickable');
+    el.onclick = null;
+    statusTimer = setTimeout(hideStatus, 3000);
+  }
 }
 function hideStatus() {
   document.getElementById('statusbar').classList.add('hidden');
+}
+
+// ════════════════════════════════════════════════
+// 전체 결과 모달
+// ════════════════════════════════════════════════
+function openModal() {
+  const modal = document.getElementById('listModal');
+  const q = currentQuery || '';
+  document.getElementById('modalTitle').textContent =
+    `"${q}" 검색 결과 — ${currentScored.length}개`;
+  setSort(currentSort);
+  modal.classList.add('open');
+}
+
+function closeModal(e) {
+  // backdrop 클릭 시만 닫기
+  if (e.target === document.getElementById('listModal')) {
+    document.getElementById('listModal').classList.remove('open');
+  }
+}
+
+function closeModalDirect() {
+  document.getElementById('listModal').classList.remove('open');
+}
+
+function setSort(type) {
+  currentSort = type;
+  document.getElementById('sortScore').classList.toggle('on', type === 'score');
+  document.getElementById('sortDate').classList.toggle('on', type === 'date');
+  renderModalList(type);
+}
+
+function renderModalList(sort) {
+  const container = document.getElementById('modalList');
+  container.innerHTML = '';
+
+  const sorted = [...currentScored].sort((a, b) => {
+    if (sort === 'date') {
+      const da = (a.date || '').replace(/\./g, '');
+      const db = (b.date || '').replace(/\./g, '');
+      return db.localeCompare(da);
+    }
+    return b._score - a._score;
+  });
+
+  sorted.forEach((art, i) => {
+    const item = document.createElement('a');
+    item.className = 'list-item';
+    item.href = art.url || '#';
+    item.target = '_blank';
+    item.rel = 'noopener';
+
+    const dot = document.createElement('span');
+    dot.className = 'list-dot';
+    dot.style.background = CAT_COLOR[art.category] || CAT_COLOR.default;
+
+    const info = document.createElement('div');
+    info.className = 'list-info';
+
+    const title = document.createElement('div');
+    title.className = 'list-title';
+    title.textContent = art.title || '(제목 없음)';
+
+    const meta = document.createElement('div');
+    meta.className = 'list-meta';
+    meta.textContent = [art.category, art.date, art.reporter ? art.reporter + ' 기자' : '']
+      .filter(Boolean).join(' · ');
+
+    info.appendChild(title);
+    info.appendChild(meta);
+    item.appendChild(dot);
+    item.appendChild(info);
+    container.appendChild(item);
+  });
 }
 
 function show(id) {
