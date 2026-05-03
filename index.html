@@ -456,6 +456,93 @@
     font-family: 'Noto Sans KR','Malgun Gothic',sans-serif;
   }
   .node-label.big { font-size: 13px; font-weight: 700; }
+
+  /* ════════════════════════════════════════════════
+     모바일 반응형
+  ════════════════════════════════════════════════ */
+  @media (max-width: 600px) {
+    /* 헤더 */
+    header { padding: 12px 14px 0; }
+    .header-row { gap: 8px; }
+    .logo-name { font-size: 15px; }
+    .logo-sub  { font-size: 10px; }
+    .search-wrap {
+      min-width: unset;
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 8px 8px 0 0;
+    }
+    .search-input { font-size: 16px; /* iOS 줌 방지 */ padding: 9px 12px; }
+    .search-btn   { padding: 0 14px; font-size: 13px; }
+
+    /* 필터 (가로 스크롤) */
+    .filter-row {
+      padding: 8px 12px;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      gap: 6px;
+    }
+    .filter-row::-webkit-scrollbar { display: none; }
+    .chip { flex-shrink: 0; font-size: 11px; padding: 4px 11px; }
+
+    /* 범례: 작게 + 상단으로 */
+    #legend {
+      bottom: auto;
+      top: 80px;
+      left: 10px;
+      padding: 8px 12px;
+      font-size: 11px;
+    }
+    .legend-dot { width: 9px; height: 9px; }
+    .legend-item { gap: 6px; margin-bottom: 4px; }
+
+    /* 상태바 */
+    #statusbar {
+      font-size: 11px;
+      padding: 6px 16px;
+      bottom: 16px;
+      max-width: calc(100vw - 32px);
+      white-space: normal;
+      text-align: center;
+      line-height: 1.4;
+    }
+
+    /* 툴팁: 하단 중앙 고정 */
+    #tooltip {
+      position: fixed !important;
+      left: 8px !important;
+      right: 8px !important;
+      bottom: 60px !important;
+      top: auto !important;
+      transform: none !important;
+      max-width: none !important;
+      min-width: unset !important;
+      pointer-events: auto;
+      display: none;
+    }
+    .tt-footer { display: none; }
+    .tt-mobile-link {
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #111;
+      border-top: 1px solid var(--border);
+      text-decoration: none;
+      gap: 4px;
+    }
+
+    /* 모달 */
+    .modal-sheet { max-height: 92vh; }
+    .modal-title { font-size: 13px; }
+    .list-title  { font-size: 13px; }
+  }
+  /* 모바일에서만 보이는 원문 링크 버튼 */
+  .tt-mobile-link { display: none; }
 </style>
 </head>
 <body>
@@ -520,6 +607,7 @@
     <div class="tt-meta" id="ttMeta"></div>
     <div class="tt-cloud" id="ttCloud"></div>
     <div class="tt-footer">클릭하면 원문으로 이동 ↗</div>
+    <a class="tt-mobile-link" id="ttMobileLink" href="#" target="_blank" rel="noopener">원문 보기 ↗</a>
   </div>
 </div>
 
@@ -718,10 +806,13 @@ function drawNetwork(articles, tokens) {
       .on('start', dragStart)
       .on('drag',  dragging)
       .on('end',   dragEnd))
-    .on('mouseover', onHover)
-    .on('mousemove', onMove)
-    .on('mouseout',  onOut)
-    .on('click', d => window.open(d.target.__data__.url, '_blank'));
+    .on('mouseover', (e, d) => { if (!isMobile()) onHover(e, d); })
+    .on('mousemove', (e)    => { if (!isMobile()) onMove(e); })
+    .on('mouseout',  ()     => { if (!isMobile()) onOut(); })
+    .on('click', (e, d) => {
+      if (isMobile()) { e.stopPropagation(); onTapNode(e, d); }
+      else { if (d.url) window.open(d.url, '_blank'); }
+    });
 
   // 원
   nodeEl.append('circle')
@@ -866,6 +957,55 @@ function renderWordCloud(keywords) {
 }
 
 // ════════════════════════════════════════════════
+// 모바일 유틸
+// ════════════════════════════════════════════════
+function isMobile() {
+  return window.innerWidth <= 600 || ('ontouchstart' in window && window.innerWidth < 900);
+}
+
+let _tappedNode = null;
+function onTapNode(e, d) {
+  const tt = document.getElementById('tooltip');
+  if (_tappedNode === d.idx && tt.style.display === 'block') {
+    // 같은 노드 두 번 탭 → 원문 이동
+    if (d.url) window.open(d.url, '_blank');
+    tt.style.display = 'none';
+    _tappedNode = null;
+    return;
+  }
+  _tappedNode = d.idx;
+  // 툴팁 내용 채우기
+  document.getElementById('ttTitle').textContent = d.title || '제목 없음';
+  const metaEl = document.getElementById('ttMeta');
+  metaEl.innerHTML = '';
+  if (d.category) addMeta(metaEl, d.category);
+  if (d.issue)    addMeta(metaEl, d.issue);
+  if (d.date)     addMeta(metaEl, d.date);
+  if (d.reporter) addMeta(metaEl, d.reporter + ' 기자');
+  renderWordCloud(d.keywords || []);
+  const link = document.getElementById('ttMobileLink');
+  if (link) link.href = d.url || '#';
+  tt.style.display = 'block';
+}
+
+// 모바일: 툴팁 바깥 탭 시 닫기
+document.addEventListener('click', () => {
+  if (isMobile()) {
+    document.getElementById('tooltip').style.display = 'none';
+    _tappedNode = null;
+  }
+});
+
+// 스테이지 높이 동적 계산
+function resizeStage() {
+  const headerH = document.querySelector('header').offsetHeight;
+  const filterH = document.getElementById('filterRow').offsetHeight;
+  const stage   = document.getElementById('stage');
+  stage.style.height = (window.innerHeight - headerH - filterH) + 'px';
+}
+window.addEventListener('resize', () => { resizeStage(); if (simulation) simulation.restart(); });
+
+// ════════════════════════════════════════════════
 // 유틸
 // ════════════════════════════════════════════════
 function truncate(str, n) {
@@ -987,6 +1127,7 @@ document.getElementById('searchInput').addEventListener('keydown', e => {
 // ════════════════════════════════════════════════
 // 시작
 // ════════════════════════════════════════════════
+resizeStage();
 init();
 </script>
 </body>
