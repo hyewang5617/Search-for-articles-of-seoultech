@@ -53,18 +53,6 @@
     letter-spacing: .04em;
     margin-top: 2px;
   }
-  .made-by {
-    font-size: 10px;
-    font-weight: 500;
-    color: rgba(255,255,255,.55);
-    background: #111;
-    border-radius: 6px;
-    padding: 4px 10px;
-    white-space: nowrap;
-    letter-spacing: .02em;
-    align-self: center;
-    font-style: italic;
-  }
   .search-wrap {
     flex: 1;
     min-width: 220px;
@@ -477,12 +465,12 @@
     <div class="logo">
       <span class="logo-name">서울과기대신문</span>
       <span class="logo-sub">기사 검색</span>
+      <span class="logo-sub" style="font-size:9px;margin-top:1px;opacity:.55;">made by hyewang5617</span>
     </div>
     <div class="search-wrap">
       <input id="searchInput" class="search-input" type="text"
         placeholder="검색어 입력 (예: 총학생회, 암 발병, STU)" autocomplete="off">
       <button class="search-btn" onclick="doSearch()">검색</button>
-      <span class="made-by">made by hyewang5617</span>
     </div>
   </div>
 </header>
