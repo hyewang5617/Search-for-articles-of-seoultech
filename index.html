@@ -461,23 +461,22 @@
      모바일 반응형
   ════════════════════════════════════════════════ */
   @media (max-width: 600px) {
-    /* 헤더: 로고 + 검색창 세로 분리 */
-    header { padding: 12px 14px 0; }
-    .header-row {
-      flex-direction: column;
-      align-items: stretch;
-      gap: 8px;
-    }
+    /* 헤더: 로고 → 검색창 줄 바꿈 */
+    header { padding: 10px 12px 0; }
+    .header-row { gap: 6px; }
+    .logo { width: 100%; }           /* 로고가 한 줄 전체를 차지 → 검색창 아래로 */
     .logo-name { font-size: 15px; }
     .logo-sub  { font-size: 10px; }
     .search-wrap {
-      min-width: unset;
       width: 100%;
+      min-width: 0;                  /* min-width:220px 해제 */
       padding: 10px 12px;
       border-radius: 8px 8px 0 0;
+      overflow: hidden;              /* 버튼이 흰 박스 밖으로 못 나가게 */
+      box-sizing: border-box;
     }
-    .search-input { font-size: 16px; padding: 9px 12px; } /* iOS 줌 방지 */
-    .search-btn   { padding: 0 18px; font-size: 14px; flex-shrink: 0; }
+    .search-input { font-size: 16px; padding: 9px 10px; } /* iOS 줌 방지 */
+    .search-btn   { padding: 0 16px; font-size: 14px; flex-shrink: 0; border-radius: 5px; }
 
     /* 필터 (가로 스크롤) */
     .filter-row {
